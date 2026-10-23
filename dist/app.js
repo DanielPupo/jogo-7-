@@ -12,15 +12,100 @@ const missions=[
  ['Voz da ciência','Explique sua descoberta','Uma boa investigação precisa de uma explicação. Registre um experimento e escreva o que você observou no seu diário.','Registre uma observação com pelo menos 30 caracteres em um teste de 10 segundos ou mais.'],
  ['Expedição concluída','Compartilhe suas descobertas','Agora é com você! Personalize os parâmetros, compare os testes e exporte o diário para discutir os resultados com sua turma.','Tenha 3 experimentos registrados e ao menos uma observação de 30 caracteres. Exporte o diário pelo menu Meus experimentos.']
 ];
-let saved={done:[],records:[],mission:0};try{const p=JSON.parse(localStorage.getItem('astrolearn-biolab-v1'));if(p&&Array.isArray(p.done)&&Array.isArray(p.records))saved={...saved,...p};}catch{}
-let mission=Math.max(0,Math.min(9,Number(saved.mission)||0)),free=false,tool='observe',sim,running=false,accumulator=0,last=0,runId=0,simulationSeed=42,recordSerial=0,interventions=0;
+const missionBlockHints=[
+ 'Evento: veja o bloco QUANDO no início do programa. Ele inicia a sequência quando você clica em Executar.',
+ 'Parâmetros: adicione Definir população = 11 e Definir doentes iniciais = 1; finalize com Aguardar.',
+ 'Condição: use SE houver contato para ligar a transmissão; Aguardar mantém a simulação ativa para testar a regra.',
+ 'Parâmetro: programe uma porcentagem de máscaras iniciais e compare com a proteção manual dos habitantes.',
+ 'Sequência: defina 11 habitantes → aguarde; depois troque o bloco para 30 → aguarde e registre os dois testes.',
+ 'Parâmetro: adicione Definir recuperação = 8 segundos e Aguardar = 10 segundos. Observe quando a cor muda.',
+ 'Repetição: mantenha os mesmos blocos e altere apenas o valor do bloco Máscaras iniciais entre os dois testes.',
+ 'Parâmetro: escolha Vacinar inicialmente = 30% ou mais; lembre que este bloco não cura quem já começa doente.',
+ 'Saída: programe Aguardar = 10 segundos, execute e clique Registrar experimento para escrever sua observação.',
+ 'Desafio final: combine evento, parâmetros, condição SE e Aguardar; execute, registre, compare e exporte seu diário.'
+];
+let saved={done:[],records:[],mission:0,program:[]};try{const p=JSON.parse(localStorage.getItem('astrolearn-biolab-v1'));if(p&&Array.isArray(p.done)&&Array.isArray(p.records))saved={...saved,...p};}catch{}
+if(!Array.isArray(saved.program))saved.program=[];
+let mission=Math.max(0,Math.min(9,Number(saved.mission)||0)),free=false,tool='observe',sim,running=false,accumulator=0,last=0,runId=0,simulationSeed=42,recordSerial=0,interventions=0,programStopAt=0;
 const world=$('world'),ctx=world.getContext('2d'),chart=$('chart'),cc=chart.getContext('2d');
 function persist(){try{localStorage.setItem('astrolearn-biolab-v1',JSON.stringify(saved));}catch{toast('O navegador não conseguiu guardar o progresso. Exporte seu diário.');}}
 function toast(message){let old=document.querySelector('.toast');if(old)old.remove();const t=document.createElement('div');t.className='toast';t.textContent=message;t.setAttribute('role','status');document.body.append(t);setTimeout(()=>t.remove(),3200);}
 function config(){return{population:+$('population').value,initial:+$('initial').value,radius:+$('radius').value,transmission:$('transmission').checked,recovery:$('recover').checked?+$('recovery').value:0,masked:+$('masked').value/100,vaccinated:+$('vaccinated').value/100};}
-function reset(){running=false;accumulator=0;sim=new Simulation(config(),simulationSeed);runId++;interventions=0;renderControls();update();draw();agentList();$('feedback').textContent='';}
+function reset(){running=false;programStopAt=0;accumulator=0;sim=new Simulation(config(),simulationSeed);runId++;interventions=0;renderControls();update();draw();agentList();$('feedback').textContent='';}
 function renderControls(){for(const id of ['population','initial','radius','masked','vaccinated'])$(id+'Value').textContent=$(id).value+(['masked','vaccinated'].includes(id)?'%':'');$('play').textContent=running?'Ⅱ Pausar':'▶ '+(sim.time>0?'Continuar':'Iniciar experimento');$('arenaStatus').textContent=running?'EXPERIMENTO EM ANDAMENTO':sim.time?'EXPERIMENTO PAUSADO':'PRONTO PARA EXPLORAR';$('seedLabel').textContent='Cenário '+simulationSeed;}
-function renderMission(){const m=missions[mission];$('stage').textContent=free?'EXPLORAÇÃO LIVRE • ROTEIRO OPCIONAL':`ETAPA ${String(mission+1).padStart(2,'0')} DE 10 • ROTEIRO GUIADO`;$('missionTitle').textContent=free?'Seu laboratório. Suas hipóteses.':m[0];$('missionDesc').textContent=free?'Explore as regras, teste proteções e registre suas descobertas. Você pode voltar ao roteiro guiado a qualquer momento.':m[2];$('objective').textContent=free?'Mude uma variável por vez. Registre os testes e compare seus resultados.':m[3];$('complete').hidden=free;$('feedback').textContent='';$('progress').textContent=saved.done.length+' / 10';$('xp').textContent=saved.done.length*100+' XP';$('guided').classList.toggle('active',!free);$('free').classList.toggle('active',free);$('recordCount').textContent=saved.records.length;}
+function renderMissionContent(){const m=missions[mission];$('stage').textContent=free?'EXPLORAÇÃO LIVRE • ROTEIRO OPCIONAL':`ETAPA ${String(mission+1).padStart(2,'0')} DE 10 • ROTEIRO GUIADO`;$('missionTitle').textContent=free?'Seu laboratório. Suas hipóteses.':m[0];$('missionDesc').textContent=free?'Explore as regras, teste proteções e registre suas descobertas. Você pode voltar ao roteiro guiado a qualquer momento.':m[2];$('objective').textContent=free?'Mude uma variável por vez. Registre os testes e compare seus resultados.':m[3];$('complete').hidden=free;$('feedback').textContent='';$('progress').textContent=saved.done.length+' / 10';$('xp').textContent=saved.done.length*100+' XP';$('guided').classList.toggle('active',!free);$('free').classList.toggle('active',free);$('recordCount').textContent=saved.records.length;}
+function renderMission(){renderMissionContent();const hint=$('programHint');if(hint)hint.textContent=free?'Desafio livre: crie uma sequência, mude um único parâmetro e compare os resultados no diário.':missionBlockHints[mission];}
+const programBlocks={
+ population:{kind:'PARÂMETRO',label:'Definir população como',help:'Escolha quantos habitantes começam na estação.',values:[['11','11 habitantes'],['30','30 habitantes'],['50','50 habitantes'],['70','70 habitantes']]},
+ initial:{kind:'PARÂMETRO',label:'Definir doentes no início como',help:'Este bloco escolhe quantos começam doentes.',values:[['1','1 doente'],['2','2 doentes'],['4','4 doentes'],['8','8 doentes']]},
+ masks:{kind:'PARÂMETRO',label:'Colocar máscaras iniciais em',help:'Percentual de habitantes que já começa com máscara.',values:[['0','0%'],['30','30%'],['60','60%'],['90','90%']]},
+ vaccinated:{kind:'PARÂMETRO',label:'Vacinar inicialmente',help:'Percentual de habitantes saudáveis vacinados no início.',values:[['0','0%'],['30','30%'],['60','60%'],['90','90%']]},
+ transmissionOn:{kind:'AÇÃO',label:'Ativar a regra de transmissão',help:'Um contato entre doente e saudável pode transmitir o contágio.'},
+ transmissionOff:{kind:'AÇÃO',label:'Desativar a regra de transmissão',help:'Sem transmissão, nenhum novo caso surge pelo contato.'},
+ contact:{kind:'CONDIÇÃO',label:'SE doente tocar saudável → permitir transmissão',help:'O SE representa uma condição: a regra vale quando os dois estados se encontram.'},
+ recovery:{kind:'PARÂMETRO',label:'Recuperar doentes após',help:'Escolha quanto tempo o modelo espera antes de recuperar.',values:[['0','não recuperar'],['8','8 segundos'],['12','12 segundos'],['20','20 segundos']]},
+ wait:{kind:'TEMPO',label:'Aguardar na simulação',help:'O programa deixa o experimento rodar durante este tempo.',values:[['5','5 segundos'],['10','10 segundos'],['20','20 segundos']]}
+};
+function createProgramPanel(){
+ const section=document.createElement('section');
+ section.className='programming-panel panel';
+ section.innerHTML=`<div class="paneltitle"><div><h3>🧩 Programação em blocos</h3><p>Monte uma sequência de instruções e veja seu programa controlar a simulação.</p></div><span>BLOCOS VISUAIS</span></div><div class="block-learning"><b>Como pensar como um programador</b><span><i class="event-chip">QUANDO</i> começa → <i class="action-chip">FAÇA</i> as instruções em ordem → <i class="condition-chip">SE</i> uma condição acontecer, aplique uma regra.</span></div><div class="block-workspace"><div class="block-palette"><h4>1. Escolha blocos</h4><p>Clique para incluir no seu programa.</p><button id="addBlock_population" type="button">+ Definir população</button><button id="addBlock_initial" type="button">+ Definir doentes iniciais</button><button id="addBlock_masks" type="button">+ Definir máscaras</button><button id="addBlock_vaccinated" type="button">+ Definir vacinas</button><button id="addBlock_transmissionOn" type="button">+ Ativar transmissão</button><button id="addBlock_transmissionOff" type="button">+ Desativar transmissão</button><button id="addBlock_contact" type="button">+ SE houver contato...</button><button id="addBlock_recovery" type="button">+ Definir recuperação</button><button id="addBlock_wait" type="button">+ Aguardar tempo</button></div><div class="block-program"><h4>2. Seu programa</h4><div class="program-trigger"><b>QUANDO</b><span>clicar em Executar meu programa</span></div><ol id="programStack" aria-label="Blocos do programa, na ordem de execução"></ol><p id="programEmpty" class="micro">Seu programa está vazio. Adicione blocos à esquerda. Inclua pelo menos um bloco Aguardar.</p><div class="program-actions"><button id="programRun" class="primary" type="button">▶ Executar meu programa</button><button id="programClear" class="quiet" type="button">Limpar blocos</button></div><p id="programFeedback" class="program-feedback" role="status" aria-live="polite">Os blocos ficam salvos neste navegador junto com suas etapas e experimentos.</p></div></div><details class="block-vocabulary"><summary>O que significam evento, sequência e condição?</summary><p><b>Evento:</b> algo que inicia o programa. <b>Sequência:</b> ordem em que as instruções são executadas, de cima para baixo. <b>Parâmetro:</b> valor que você escolhe, como população. <b>Condição:</b> uma regra com “SE”. <b>Aguardar:</b> tempo de execução da simulação.</p><p>Exemplo: QUANDO iniciar → definir 30 habitantes → SE doente tocar saudável, permitir transmissão → aguardar 10 segundos.</p></details>`;
+ const challenge=document.createElement('div');challenge.className='program-challenge';challenge.innerHTML='<b>Blocos em foco nesta etapa</b><p id="programHint"></p>';section.append(challenge);
+ const anchor=document.querySelector('.instruction-panel');
+ if(anchor)anchor.after(section);else document.body.append(section);
+ Object.keys(programBlocks).forEach(type=>{$('addBlock_'+type).onclick=()=>{if(saved.program.length>=12){$('programFeedback').textContent='O programa pode ter até 12 blocos. Remova um bloco antes de adicionar outro.';return;}const definition=programBlocks[type];saved.program.push({type,value:definition.values?definition.values[0][0]:''});persist();renderProgram();$('programFeedback').textContent='Bloco adicionado. Confira a ordem e escolha um valor para os parâmetros.';};});
+ $('programRun').onclick=runProgram;
+ $('programClear').onclick=()=>{saved.program=[];persist();renderProgram();$('programFeedback').textContent='Blocos removidos. Monte uma nova sequência quando quiser.';};
+ renderProgram();renderMission();
+}
+function renderProgram(){
+ const stack=$('programStack');stack.replaceChildren();
+ saved.program.forEach((block,index)=>{
+  const definition=programBlocks[block.type];if(!definition)return;
+  const item=document.createElement('li');item.className='program-block '+(definition.kind==='CONDIÇÃO'?'condition':definition.kind==='PARÂMETRO'?'parameter':definition.kind==='TEMPO'?'time':'action');
+  const content=document.createElement('div');content.className='program-block-content';
+  const kind=document.createElement('b');kind.className='block-kind';kind.textContent=definition.kind;content.append(kind);
+  const description=document.createElement('span');description.textContent=definition.label;content.append(description);
+  if(definition.values){
+   const select=document.createElement('select');select.setAttribute('aria-label',definition.label);
+   definition.values.forEach(([value,label])=>{const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);});
+   const selected=definition.values.some(([value])=>value===String(block.value))?String(block.value):definition.values[0][0];select.value=selected;
+   select.onchange=()=>{saved.program[index].value=select.value;persist();};
+   content.append(select);
+  }
+  const controls=document.createElement('div');controls.className='block-controls';
+  [['↑','Mover bloco para cima',-1],['↓','Mover bloco para baixo',1],['×','Remover bloco',0]].forEach(([label,aria,delta])=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.setAttribute('aria-label',aria);button.onclick=()=>{if(delta===0)saved.program.splice(index,1);else{const target=index+delta;if(target<0||target>=saved.program.length)return;[saved.program[index],saved.program[target]]=[saved.program[target],saved.program[index]];}persist();renderProgram();};controls.append(button);});
+  item.append(content);item.append(controls);stack.append(item);
+ });
+ $('programEmpty').hidden=saved.program.some(block=>programBlocks[block.type]);
+}
+function runProgram(){
+ if(running){$('programFeedback').textContent='Pause ou termine o experimento atual antes de executar outro programa.';return;}
+ let duration=0,hasWait=false;
+ for(const block of saved.program){
+  const definition=programBlocks[block.type];if(!definition)continue;
+  const value=String(block.value);
+  if(definition.values&&!definition.values.some(([allowed])=>allowed===value))continue;
+  if(block.type==='wait'){duration+=Number(value);hasWait=true;}
+ }
+ if(!hasWait){$('programFeedback').textContent='Adicione o bloco “Aguardar tempo” para definir por quanto tempo a simulação vai rodar.';return;}
+ if(!duration){$('programFeedback').textContent='Escolha um tempo maior que zero no bloco “Aguardar tempo”.';return;}
+ if(duration>120){$('programFeedback').textContent='O tempo total não pode passar de 120 segundos. Reduza os blocos Aguardar.';return;}
+ for(const block of saved.program){
+  const definition=programBlocks[block.type];if(!definition)continue;
+  const value=String(block.value);
+  if(definition.values&&!definition.values.some(([allowed])=>allowed===value))continue;
+  if(block.type==='population')$('population').value=value;
+  if(block.type==='initial')$('initial').value=value;
+  if(block.type==='masks')$('masked').value=value;
+  if(block.type==='vaccinated')$('vaccinated').value=value;
+  if(block.type==='transmissionOn'||block.type==='contact')$('transmission').checked=true;
+  if(block.type==='transmissionOff')$('transmission').checked=false;
+  if(block.type==='recovery'){$('recover').checked=value!=='0';if(value!=='0')$('recovery').value=value;}
+ }
+ $('initial').value=String(Math.min(+$('initial').value,+$('population').value-1,10));
+ reset();programStopAt=duration;running=true;renderControls();$('programFeedback').textContent=`Programa iniciado: instruções aplicadas em sequência. A simulação vai parar em ${duration} segundos; depois, registre o experimento no diário.`;toast('Programa em execução!');
+}
 function update(){const c=sim.counts();$('sCount').textContent=c.S;$('iCount').textContent=c.I;$('rCount').textContent=c.R;$('clock').textContent=sim.time.toFixed(1)+' s';$('populationLabel').textContent=sim.cfg.population;$('insight').textContent=sim.time?`${sim.cases} de ${sim.cfg.population} habitantes adoeceram até agora (${Math.round(sim.cases/sim.cfg.population*100)}%). Pico: ${sim.peak} doentes ao mesmo tempo.`:'Sua descoberta começa com uma observação.';}
 function rounded(x,y,w,h,r,fill){ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
 function monster(a,t){const r=sim.cfg.radius,x=a.x,y=a.y,bob=running?Math.sin(t*3+a.id)*1.5:0;ctx.save();ctx.translate(x,y+bob);const color=a.state==='I'?'#ff819e':a.state==='R'?'#67d7e1':'#b5ee78';ctx.fillStyle='#020e1745';ctx.beginPath();ctx.ellipse(0,r+5,r*.9,r*.3,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(-r*.7,-r*.3);ctx.lineTo(-r*.9,-r*1.1);ctx.lineTo(-r*.25,-r*.8);ctx.lineTo(r*.35,-r*.8);ctx.lineTo(r*.8,-r*1.15);ctx.lineTo(r*.7,-r*.25);ctx.closePath();ctx.fill();rounded(-r,-r*.8,2*r,1.8*r,r*.7,color);rounded(-r*.75,r*.7,r*.45,r*.5,3,color);rounded(r*.3,r*.7,r*.45,r*.5,3,color);const eye=r*.23;for(const ex of [-r*.38,r*.38]){ctx.fillStyle='#f8ffeb';ctx.beginPath();ctx.arc(ex,-r*.15,eye*1.35,0,7);ctx.fill();ctx.fillStyle='#183044';ctx.beginPath();ctx.arc(ex+1,-r*.12,eye*.65,0,7);ctx.fill();}if(a.mask){ctx.strokeStyle='#174b83';ctx.lineWidth=Math.max(1,r*.1);ctx.beginPath();ctx.moveTo(-r*.62,r*.25);ctx.lineTo(-r*.93,r*.34);ctx.moveTo(r*.62,r*.25);ctx.lineTo(r*.93,r*.34);ctx.stroke();rounded(-r*.67,r*.18,r*1.34,r*.48,3,'#3287ff');ctx.strokeStyle='#d9edff';ctx.lineWidth=Math.max(1,r*.08);ctx.strokeRect(-r*.67,r*.18,r*1.34,r*.48);ctx.strokeStyle='#174b83';ctx.lineWidth=Math.max(1,r*.07);ctx.beginPath();ctx.moveTo(-r*.38,r*.34);ctx.lineTo(r*.38,r*.34);ctx.moveTo(-r*.38,r*.49);ctx.lineTo(r*.38,r*.49);ctx.stroke();}else{ctx.strokeStyle='#273d45';ctx.lineWidth=1.5;ctx.beginPath();if(a.state==='I'){ctx.arc(0,r*.6,r*.22,Math.PI,0);}else{ctx.arc(0,r*.33,r*.25,0,Math.PI);}ctx.stroke();}if(a.vaccine){ctx.fillStyle='#b795ff';ctx.beginPath();ctx.moveTo(r*.55,-r*.7);ctx.lineTo(r*1.25,-r*.7);ctx.lineTo(r*1.2,-r*.12);ctx.lineTo(r*.9,r*.12);ctx.lineTo(r*.6,-r*.12);ctx.fill();ctx.fillStyle='#fff';ctx.font=`bold ${r*.55}px sans-serif`;ctx.textAlign='center';ctx.fillText('+',r*.9,-r*.2);}ctx.restore();}
@@ -48,5 +133,5 @@ $('complete').onclick=()=>{const c=sim.counts(),recs=saved.records;let ok=[sim.t
 function exportCSV(){if(!saved.records.length){toast('Registre um experimento antes de exportar.');return;}const cols=['teste','população','doentes_iniciais','tamanho','máscaras_iniciais_%','vacinas_iniciais_%','recuperação_s','transmissão','tempo_s','casos_acumulados','pico_doentes','saudáveis_finais','doentes_finais','recuperados_finais','máscaras_finais','vacinas_finais','observação'];let rows=saved.records.map((r,i)=>[i+1,r.cfg.population,r.cfg.initial,r.cfg.radius,r.cfg.masked*100,r.cfg.vaccinated*100,r.cfg.recovery,r.cfg.transmission?'sim':'não',r.time,r.cases,r.peak,r.S,r.I,r.R,r.masksNow,r.vaccinesNow,r.note]);const csv='\ufeff'+[cols,...rows].map(row=>row.map(v=>'"'+String(v).replace(/^[=+@\-]/,"'$&").replace(/"/g,'""')+'"').join(';')).join('\r\n');download(csv,'AstroLearn_Diario_BioLab.csv','text/csv;charset=utf-8');}
 function download(content,name,type){let url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 $('records').onclick=()=>{modal(`<div class="eyebrow">SEU DIÁRIO CIENTÍFICO</div><h2 class="modalTitle">Meus experimentos</h2><p>Compare populações, tempo, proteções e casos. Máscaras e vacinas são os percentuais configurados no início. As intervenções durante o teste aparecem na exportação.</p><div class="recordwrap"><table><thead><tr><th>Teste</th><th>Pop.</th><th>Tempo</th><th>Másc.</th><th>Vac.</th><th>Casos</th><th>Pico</th></tr></thead><tbody>${saved.records.map((r,i)=>`<tr><td>${i+1}</td><td>${r.cfg.population}</td><td>${r.time.toFixed(1)} s</td><td>${Math.round(r.cfg.masked*100)}%</td><td>${Math.round(r.cfg.vaccinated*100)}%</td><td>${r.cases}</td><td>${r.peak}</td></tr><tr><td colspan="7">${r.note?escapeHTML(r.note):'Sem observação.'}</td></tr>`).join('')}</tbody></table></div>${!saved.records.length?'<p>Seu diário está vazio. Inicie um teste e clique em Registrar experimento.</p>':''}<p><button id="csv" class="primary">↓ Exportar diário (.csv)</button> <button id="newSeed" class="quiet">Novo cenário aleatório</button></p><p class="micro">Um novo cenário muda as posições e o acaso e reinicia o teste. Não apaga seu histórico.</p>`);$('csv').onclick=exportCSV;$('newSeed').onclick=()=>{simulationSeed=Math.floor(Math.random()*1000000);reset();$('modal').close();toast('Novo cenário criado.');};};
-function frame(ts){const dt=Math.min((ts-last)/1000,.1)||0;last=ts;if(running){accumulator+=dt*+$('speed').value;while(accumulator>=1/60){sim.step(1/60);accumulator-=1/60;if(sim.time>=120){running=false;renderControls();toast('Experimento finalizado! Registre sua descoberta.');break;}}update();}draw();requestAnimationFrame(frame);}
-initializeTheme();reset();renderMission();requestAnimationFrame(frame);
+function frame(ts){const dt=Math.min((ts-last)/1000,.1)||0;last=ts;if(running){accumulator+=dt*+$('speed').value;while(accumulator>=1/60){sim.step(1/60);accumulator-=1/60;if(sim.time>=programStopAt&&programStopAt>0){running=false;programStopAt=0;renderControls();$('programFeedback').textContent='Programa concluído! Observe o gráfico e registre seu experimento no diário.';toast('Programa concluído!');break;}if(sim.time>=120){running=false;programStopAt=0;renderControls();toast('Experimento finalizado! Registre sua descoberta.');break;}}update();}draw();requestAnimationFrame(frame);}
+initializeTheme();reset();renderMission();createProgramPanel();requestAnimationFrame(frame);

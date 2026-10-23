@@ -82,3 +82,50 @@ body[data-theme="light"] dialog{background:#fff;color:#202b38;border-color:#aab6
 body[data-theme="light"] .reflection{background:#f7f9fb;color:#202b38;border-color:#b8c2ce}
 body[data-theme="light"] .recordwrap{color:#202b38}
 @media(max-width:720px){header{gap:8px}.header-actions{gap:3px}#themeToggle{font-size:11px;padding:9px 8px}header #help{font-size:11px;padding:9px 8px}}
+.programming-panel{margin:0 0 20px;background:linear-gradient(140deg,#141c2c,#121b29)}
+.programming-panel>.paneltitle{align-items:flex-start}
+.programming-panel .paneltitle p,.block-palette>p{margin:7px 0 0;color:var(--muted);font-size:11px;line-height:1.55}
+.programming-panel .paneltitle>span{font-size:8px}
+.block-learning{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;border:1px solid var(--line);border-radius:9px;padding:12px 14px;margin:0 0 14px;color:var(--muted);font-size:11px;line-height:1.8}
+.block-learning>b{color:#fff}
+.program-challenge{padding:11px 14px;margin:-2px 0 14px;border-left:4px solid var(--cyan);border-radius:6px;background:#112531;color:var(--muted);font-size:10px;line-height:1.6}
+.program-challenge>b{color:#fff}
+.program-challenge p{margin:4px 0 0}
+.block-learning i,.program-trigger b{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.7px;padding:4px 7px;border-radius:5px}
+.event-chip,.program-trigger{background:#473775;color:#eee3ff}
+.action-chip{background:#245438;color:#d9ffd8}
+.condition-chip{background:#704624;color:#ffe6bd}
+.block-workspace{display:grid;grid-template-columns:minmax(185px, .72fr) minmax(0,1.5fr);gap:14px}
+.block-palette,.block-program{padding:15px;background:#0e1725;border:1px solid var(--line);border-radius:10px;min-width:0}
+.block-palette h4,.block-program h4{margin:0;font-size:12px}
+.block-palette>p{margin-bottom:10px}
+.block-palette button{display:block;width:100%;text-align:left;margin-top:7px;padding:9px 10px;font-size:10px;background:#1c273b}
+.block-palette button:hover{border-color:var(--cyan)}
+.program-trigger{display:flex;align-items:center;gap:9px;margin:13px 0 8px;padding:11px 12px;border-radius:8px;font-size:11px}
+.program-trigger b{background:#654cb0;color:#fff}
+#programStack{list-style:none;padding:0 0 0 13px;margin:0;border-left:3px solid #654cb0;min-height:12px}
+.program-block{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;margin:8px 0;border:1px solid #315443;border-left:5px solid #72c96f;border-radius:8px;background:#183027}
+.program-block.condition{border-color:#79532e;border-left-color:#f3ae54;background:#352719}
+.program-block.parameter{border-color:#315273;border-left-color:#63a9e9;background:#172a3c}
+.program-block.time{border-color:#554579;border-left-color:#a894ef;background:#27213b}
+.program-block-content{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px}
+.block-kind{font-size:8px;letter-spacing:.6px;color:#c8d4de}
+.program-block select{font-size:10px}
+.block-controls{display:flex;gap:3px;flex:none}
+.block-controls button{min-width:30px;padding:5px;font-size:11px}
+.program-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.program-actions button{font-size:10px;padding:9px 11px}
+.program-feedback{min-height:18px;margin:10px 0 0;color:var(--cyan);font-size:10px;line-height:1.5}
+.block-vocabulary{margin-top:13px;color:var(--muted);font-size:10px;line-height:1.7}
+.block-vocabulary summary{cursor:pointer;color:#c2ccdc}
+.block-vocabulary p{margin:8px 0}
+body[data-theme="light"] .programming-panel{background:linear-gradient(140deg,#fff,#edf1f5)}
+body[data-theme="light"] .block-learning,body[data-theme="light"] .block-palette,body[data-theme="light"] .block-program{background:#f4f6f8}
+body[data-theme="light"] .program-challenge{background:#e9f2f4}
+body[data-theme="light"] .program-challenge>b{color:#202b38}
+body[data-theme="light"] .block-learning>b{color:#202b38}
+body[data-theme="light"] .program-trigger{color:#fff}
+body[data-theme="light"] .program-block{color:#202b38}
+body[data-theme="light"] .program-block select{color:#202b38}
+body[data-theme="light"] .block-vocabulary summary{color:#344255}
+@media(max-width:760px){.block-workspace{grid-template-columns:1fr}.programming-panel>.paneltitle{gap:10px}.programming-panel .paneltitle>span{max-width:92px;text-align:right}.program-block{align-items:flex-start}.program-block-content{align-items:flex-start;flex-direction:column;gap:6px}}

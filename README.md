@@ -29,6 +29,8 @@ Em outro computador, autentique a CLI primeiro com `npx.cmd --yes vercel@latest 
 - Aplicação de proteção com mouse, toque ou lista de botões para teclado.
 - Histórico e progresso neste navegador via localStorage (se permitido).
 - Instruções e objetivos da etapa atual visíveis acima do laboratório, com tipografia ampliada.
+- Programação visual em blocos com sequência reordenável, parâmetros configuráveis, condição SE, execução temporizada e dica de programação ligada a cada uma das dez etapas.
+- Programa e progresso das etapas salvos localmente junto com o diário de experimentos.
 - Tema escuro como padrão e alternância persistente entre tema escuro e claro.
 
 ## Integrar ao AstroLearn
@@ -43,7 +45,9 @@ Os caminhos de CSS e scripts são relativos. Hospede todos juntos, preservando o
 
 ## Mecânica e currículo
 
-Ciências: transmissão, prevenção, recuperação e limites dos modelos. Matemática: probabilidade, porcentagens, gráficos e comparação. Tecnologia: eventos, parâmetros, condições e reprodução de cenários. Engenharia: testar intervenções. Artes: personagens, cores e narrativa. Não é um editor de blocos como Code.org: os eventos são configurados por controles de regras.
+Ciências: transmissão, prevenção, recuperação e limites dos modelos. Matemática: probabilidade, porcentagens, gráficos e comparação. Tecnologia: eventos, sequência, parâmetros, condições e reprodução de cenários. Engenharia: testar intervenções. Artes: personagens, cores e narrativa.
+
+O link de referência abre o simulador de epidemia do Code.org, que apresenta a investigação do contágio por meio de programação em blocos. O BioLab mantém essa proposta de aprender experimentando, mas usa conteúdo e interface próprios. No painel **Programação em blocos**, o aluno combina blocos de parâmetro, ação, condição (`SE`) e espera em uma sequência iniciada pelo evento **QUANDO**. Ao executar, os blocos configuram e iniciam a simulação; ao final, o aluno pode registrar o resultado no mesmo diário de experimentos. Cada etapa guiada acrescenta uma dica de programação correspondente ao objetivo científico, sem substituir as dez etapas nem o registro existente.
 
 O roteiro de dez etapas usa sempre a mesma simulação: observar, criar 10 saudáveis + 1 doente, habilitar contágio, aplicar máscaras, variar população, observar recuperação, comparar máscaras, aplicar vacinas, explicar a descoberta no diário e exportar resultados. A etapa 7 exige testes de ao menos 8 segundos, diferença de duração de no máximo 1 segundo, mesma semente e parâmetros, alterando só máscaras iniciais e sem intervenções manuais.
 
