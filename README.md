@@ -6,10 +6,6 @@ Jogo educacional de investigação para o 7º ano, inspirado nas dez fases do si
 
 Abra `dist/index.html` no navegador. Para usar sem internet, a tipografia usa fontes alternativas disponíveis no dispositivo. Os demais recursos são locais. Computador, tablet e celular usam a mesma interface adaptável.
 
-## Publicar na Vercel
-
-O projeto `astrolearn-biolab`, na equipe `daniel-pupos-projects`, publica a pasta `dist/` como site estático, sem etapa de build. A versão publicada está em <https://astrolearn-biolab.vercel.app/>.
-
 Para publicar atualizações a partir da raiz deste repositório no PowerShell:
 
 ```powershell
